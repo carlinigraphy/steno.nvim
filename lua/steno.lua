@@ -1,121 +1,63 @@
---[[
+package.loaded.expr = nil
+local expr = require('expr')
 
-Low-key non-functional proof of concept. Ideally will not display overlapping
-outlines.
+local STENO_WIDTH = 23
+local MAX_ITERATIONS = 100
 
---]]
+---@alias datum [string, integer]
 
----@type { string: string }
-local starts_with = {
-   ['CH'] = -- KH
-      ' [S ][T ]K[P ][W ]H[R ][A ][O ][* ][E ][U ][F ][R ][P ][B ][L ][G ][T ][S ][D ][Z ]',
+---@class stack
+---@field data datum[]
+local stack = {}
+stack.data = { {'', 1} }
 
-   ['D'] = -- TK
-      ' [S ]TK[P ][W ][H ][R ][A ][O ][* ][E ][U ][F ][R ][P ][B ][L ][G ][T ][S ][D ][Z ]',
+---@param v datum
+---@return nil
+function stack:push(v) table.insert(self.data, v) end
 
-   ['B'] = -- PW
-      ' [S ][T ][K ]PW[H ][R ][A ][O ][* ][E ][U ][F ][R ][P ][B ][L ][G ][T ][S ][D ][Z ]',
+---@return datum
+function stack:pop() return table.remove(self.data) end
 
-   ['F'] = -- TP
-      ' [S ]T[K ]P[W ][H ][R ][A ][O ][* ][E ][U ][F ][R ][P ][B ][L ][G ][T ][S ][D ][Z ]',
-
-   ['G'] = -- TKPW
-      ' [S ]TKPW[H ][R ][A ][O ][* ][E ][U ][F ][R ][P ][B ][L ][G ][T ][S ][D ][Z ]',
-
-   ['N'] = -- TPH
-      ' [S ]T[K ]P[W ]H[R ][A ][O ][* ][E ][U ][F ][R ][P ][B ][L ][G ][T ][S ][D ][Z ]',
-
-   ['M'] = -- PH
-      ' [S ][ ][K ]P[W ]H[R ][A ][O ][* ][E ][U ][F ][R ][P ][B ][L ][G ][T ][S ][D ][Z ]',
-
-   ['V'] = -- SR
-      ' S[T ][K ][P ][W ][H ]R[A ][O ][* ][E ][U ][F ][R ][P ][B ][L ][G ][T ][S ][D ][Z ]',
-
-   ['J'] = -- SKWR
-      ' S[T ]K[P ]W[H ]R[A ][O ][* ][E ][U ][F ][R ][P ][B ][L ][G ][T ][S ][D ][Z ]',
-
-   ['Y'] = -- KWR
-      ' [ ][T ]K[P ]W[H ]R[A ][O ][* ][E ][U ][F ][R ][P ][B ][L ][G ][T ][S ][D ][Z ]',
-}
-
-
----@type { string: string }
-local ends_with = {
-   ['RCH'] = -- FRPB
-      ' [S ][T ][K ][P ][W ][H ][R ][A ][O ][* ][E ][U ]FRPB[L ][G ][T ][S ][D ][Z ]',
-
-   ['NRCH'] = -- FRPBLG
-      ' [S ][T ][K ][P ][W ][H ][R ][A ][O ][* ][E ][U ]FRPBLG[T ][S ][D ][Z ]',
-
-   ['CH'] = -- FP
-      ' [S ][T ][K ][P ][W ][H ][R ][A ][O ][* ][E ][U ]F[R ]P[B ][L ][G ][T ][S ][D ][Z ]',
-
-   ['SH'] = -- RB
-      ' [S ][T ][K ][P ][W ][H ][R ][A ][O ][* ][E ][U ][F ]R[P ]B[L ][G ][T ][S ][D ][Z ]',
-
-   ['J'] = -- PBLG
-      ' [S ][T ][K ][P ][W ][H ][R ][A ][O ][* ][E ][U ][F ][R ]PBLG[T ][S ][D ][Z ]',
-
-   ['SHUS'] = -- RBS
-      ' [S ][T ][K ][P ][W ][H ][R ][A ][O ][* ][E ][U ][F ]R[P ]B[L ][G ][T ]S[D ][Z ]',
-
-   ['TION'] = -- GS
-      ' [S ][T ][K ][P ][W ][H ][R ][A ][O ][* ][E ][U ][F ][R ][P ][B ][L ]G[T ]S[D ][Z ]',
-
-      --' [S ][T ][K ][P ][W ][H ][R ][A ][O ][* ][E ][U ][F ][R ][P ][B ][L ][G ][T ][S ][D ][Z ]',
-
-      --' [S ][T ][K ][P ][W ][H ][R ][A ][O ][* ][E ][U ][F ][R ][P ][B ][L ][G ][T ][S ][D ][Z ]',
-
-      --' [S ][T ][K ][P ][W ][H ][R ][A ][O ][* ][E ][U ][F ][R ][P ][B ][L ][G ][T ][S ][D ][Z ]',
-
-      --' [S ][T ][K ][P ][W ][H ][R ][A ][O ][* ][E ][U ][F ][R ][P ][B ][L ][G ][T ][S ][D ][Z ]',
-}
 
 ---@returns string[]
 local function query()
-   local line_nr = vim.fn.line('.') - 1 --< fix api-indexing offset
-   local lines = vim.api.nvim_buf_get_lines(0, line_nr, line_nr+1, true)
-   local line = lines[1]
+   --local line_nr = vim.fn.line('.') - 1 --< fix api-indexing offset
+   --local lines   = vim.api.nvim_buf_get_lines(0, line_nr, line_nr+1, true)
+   --local encoded = expr.encode(lines[1])
+   local encoded = expr.encode('  TK     O  U  PB      ')
 
-   local prefix = {}
-   for start, start_pat in pairs(starts_with) do
-      if string.match(line, start_pat) then
-         table.insert(prefix, start)
+   -- Can't process an empty line.
+   if encoded == '' then return end
+
+   ---@type integer
+   --- Tracking iterations. Explode if it gets too high.
+   local times = 1
+
+   while #stack.data > 0 do
+      times = times + 1
+      assert(times < MAX_ITERATIONS, '$MAX_ITERATIONS exceeded' .. vim.inspect(
+         stack.data
+      ))
+
+      local item = stack:pop()
+      local collect = item[1]
+      local position = item[2]
+
+      for _,rule in ipairs(expr.rules) do
+         local output = rule[1]
+         local pattern = rule[2]
+
+         if encoded:match(pattern, position) then
+            stack:push({ collect..output, position })
+         end
       end
    end
 
-   local suffix = {}
-   for ends, end_pat in pairs(ends_with) do
-      if string.match(line, end_pat) then
-         table.insert(suffix, ends)
-      end
-   end
-
-   local rv = {}
-   local fmt = ''
-   local vowel = string.match(line, '[A ][O ][* ][E ][U ]')
-
-   for _,s in ipairs(prefix) do
-      fmt = s .. vowel
-      for _,e in ipairs(suffix) do
-         fmt = fmt .. e
-      end
-
-      fmt, _ = string.gsub(fmt, ' ', '')
-      table.insert(rv, fmt)
-   end
-
-   local diff = #suffix - #prefix
-   if diff > 0 then
-      for i=diff, #suffix do
-         fmt = vowel .. suffix[i]
-         fmt, _ = string.gsub(fmt, ' ', '')
-         table.insert(rv, '  '..fmt)
-      end
-   end
-
-   return rv
+   print(vim.inspect(stack.data))
 end
+
+-- DEBUG
+query()
 
 
 local function display(lines)
@@ -135,7 +77,7 @@ local function display(lines)
       relative = 'win',
       row      = vim.fn.winline(),
       col      = 0,
-      width    = vim.api.nvim_win_get_width(0),
+      width    = STENO_WIDTH,
       height   = #lines,
       style    = 'minimal',
    })
@@ -147,8 +89,14 @@ end
 
 return {
    setup = function()
-      vim.keymap.set('n', 'K', function()
-         display(query())
-      end, { desc = "Provide raw steno suggestions" })
+      vim.api.nvim_create_autocmd('FileType', {
+        pattern = { 'steno_raw' },
+        callback = function(_)
+           vim.keymap.set('n', 'K', function()
+              --display(query())
+              query()
+           end, { desc = "Provide raw steno suggestions" })
+        end
+     })
    end
 }
