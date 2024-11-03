@@ -1,10 +1,8 @@
 --[[
-
 Must make unambiguous. There's duplicate letters:
 
    steno keyboard: S T K P W H R A O * E U F R P B L G T S D Z 
           encoded: 2 3 4 5 6 7 8 9 a b c d e f g h k m n p q r
-
 --]]
 
 ---@type rules
@@ -23,6 +21,7 @@ local rules = {
    {'57',    'M'   },
    {'6',     'W'   },
    {'7',     'H'   },
+   {'78',    'L'   },
    {'8',     'R'   },
    {'9',     'A'   },
    {'a',     'O'   },
@@ -45,14 +44,6 @@ local rules = {
    {'p',     'S'   },
    {'q',     'D'   },
    {'r',     'Z'   },
-
-   -- ...
-}
-
-local sort_order = {
-   '#', -- nothing should be #-prefixed, but need to occupy the space.
-   '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c',
-   'd', 'e', 'f', 'g', 'h', 'k', 'm', 'n', 'p', 'q', 'r',
 }
 
 local function decode(str)
@@ -89,6 +80,12 @@ local function decode(str)
 
    return rv
 end
+
+local sort_order = {
+   '#', -- nothing should be #-prefixed, but need to occupy the space.
+   '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c',
+   'd', 'e', 'f', 'g', 'h', 'k', 'm', 'n', 'p', 'q', 'r',
+}
 
 local function encode(raw_steno)
    local rv = ''
