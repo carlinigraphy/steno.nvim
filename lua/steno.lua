@@ -1,63 +1,81 @@
-package.loaded.expr = nil
 local expr = require('expr')
 
 local STENO_WIDTH = 23
 local MAX_ITERATIONS = 100
 
----@alias datum [string, integer]
+---@class (exact) datum
+---@field buf string
+---@field input string
 
----@class stack
----@field data datum[]
-local stack = {}
-stack.data = { {'', 1} }
+---@alias rule [string, string]
+---@alias rules rule[]
 
----@param v datum
----@return nil
-function stack:push(v) table.insert(self.data, v) end
+---@param rules rules
+---@param head datum
+---@param stack stack
+local function inner(rules, head, stack)
+   local rv = {}
 
----@return datum
-function stack:pop() return table.remove(self.data) end
+   for _, rule in ipairs(rules) do
+      if head.input
+            :sub(1, #rule[1])
+            :match(rule[1])
+      then
+         table.insert(rv, {
+            buf = head.buf .. rule[2],
+            input = head.input:sub(1 + #rule[1])
+         })
+       end
+   end
+
+   for _,v in ipairs(rv) do
+      table.insert(stack, v)
+   end
+
+   return stack
+end
 
 
 ---@returns string[]
 local function query()
-   --local line_nr = vim.fn.line('.') - 1 --< fix api-indexing offset
-   --local lines   = vim.api.nvim_buf_get_lines(0, line_nr, line_nr+1, true)
-   --local encoded = expr.encode(lines[1])
-   local encoded = expr.encode('  TK     O  U  PB      ')
+   local line_nr = vim.fn.line('.') - 1 --< fix api-indexing offset
+   local lines   = vim.api.nvim_buf_get_lines(0, line_nr, line_nr+1, true)
+
+   ---@alias stack datum[]
+   ---@type stack
+   local stack = {
+      { buf='', input=expr.encode(lines[1]) }
+   }
 
    -- Can't process an empty line.
    if encoded == '' then return end
 
-   ---@type integer
-   --- Tracking iterations. Explode if it gets too high.
-   local times = 1
+   ---@type datum
+   local head = {
+      buf = '',
+      input = '',
+   }
 
-   while #stack.data > 0 do
-      times = times + 1
-      assert(times < MAX_ITERATIONS, '$MAX_ITERATIONS exceeded' .. vim.inspect(
-         stack.data
-      ))
+   ---@type string[]
+   local candidates = {}
 
-      local item = stack:pop()
-      local collect = item[1]
-      local position = item[2]
+   local overflow = 1
+   while #stack > 0 do
+      overflow = overflow + 1
 
-      for _,rule in ipairs(expr.rules) do
-         local output = rule[1]
-         local pattern = rule[2]
+      print(vim.inspect(stack))
+      assert(overflow < MAX_ITERATIONS, '$MAX_ITERATIONS exceeded')
 
-         if encoded:match(pattern, position) then
-            stack:push({ collect..output, position })
-         end
+      head = table.remove(stack)
+      if head.input == '' then
+         table.insert(candidates, head.buf)
+      else
+         stack = inner(expr.rules, head, stack)
       end
    end
 
-   print(vim.inspect(stack.data))
+   return candidates
 end
-
--- DEBUG
-query()
 
 
 local function display(lines)
@@ -65,13 +83,14 @@ local function display(lines)
    -- results.
    if #lines == 0 then return end
 
+   -- Right pad. Allows placing the cursor on the whitespace at the top-right
+   -- of the box. Else cannot seek the cursor to a non-text position.
+   for i,line in ipairs(lines) do
+      lines[i] = line .. string.rep('', STENO_WIDTH + 1 - #line, ' ')
+   end
+
    local buf_id = vim.api.nvim_create_buf(false, true)
    vim.api.nvim_buf_set_lines(buf_id, 0, 1, false, lines)
-
-   local float_width = 0
-   for _,l in ipairs(lines) do
-      if #l > float_width then float_width = #l end
-   end
 
    local win_id = vim.api.nvim_open_win(buf_id, true, {
       relative = 'win',
@@ -82,7 +101,9 @@ local function display(lines)
       style    = 'minimal',
    })
 
+   vim.api.nvim_win_set_cursor(0, {1, STENO_WIDTH})
    vim.bo.filetype = 'steno_help'
+
    return win_id
 end
 
@@ -93,8 +114,7 @@ return {
         pattern = { 'steno_raw' },
         callback = function(_)
            vim.keymap.set('n', 'K', function()
-              --display(query())
-              query()
+              display(query())
            end, { desc = "Provide raw steno suggestions" })
         end
      })
