@@ -62,8 +62,6 @@ local function query()
    local overflow = 1
    while #stack > 0 do
       overflow = overflow + 1
-
-      print(vim.inspect(stack))
       assert(overflow < MAX_ITERATIONS, '$MAX_ITERATIONS exceeded')
 
       head = table.remove(stack)
