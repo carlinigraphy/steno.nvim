@@ -3,50 +3,60 @@ Must make unambiguous. There's duplicate letters:
 
    steno keyboard: S T K P W H R A O * E U F R P B L G T S D Z 
           encoded: 2 3 4 5 6 7 8 9 a b c d e f g h k m n p q r
+
+Vowels are the only letters output in lower case. Allows for syntax matching on
+them. Can conceal 'eu' -> 'I', or 'aoeu' -> 'Ī'.
+
+
+
 --]]
 
 ---@type rules
 local rules = {
-   {'2',      'S'   },
-   {'246',    'Y'   },
-   {'2468',   'J'   },
-   {'256',    'INT' },
-   {'3',      'T'   },
-   {'34',     'D'   },
-   {'3456',   'G'   },
-   {'357',    'N'   },
-   {'4',      'K'   },
-   {'45',     'EX'  },
-   {'5',      'P'   },
-   {'56',     'B'   },
-   {'57',     'M'   },
-   {'6',      'W'   },
-   {'7',      'H'   },
-   {'78',     'L'   },
-   {'8',      'R'   },
-   {'9',      'A'   },
-   {'a',      'O'   },
-   {'b',      '*'   },
-   {'c',      'E'   },
-   {'d',      'U'   },
-   {'e',      'F'   },
-   {'efgh',   'RCH' },
-   {'efghkm', 'NCH' },
-   {'eg',     'CH'  },
-   {'f',      'R'   },
-   {'fh',     'SH'  },
-   {'g',      'P'   },
-   {'gh',     'N'   },
-   {'ghkm',   'J'   },
-   {'gk',     'M'   },
-   {'h',      'B'   },
-   {'hm',     'K'   },
-   {'k',      'L'   },
-   {'m',      'G'   },
-   {'n',      'T'   },
-   {'p',      'S'   },
-   {'q',      'D'   },
-   {'r',      'Z'   },
+   {'2',      'S'    },
+   {'246',    'Y'    },
+   {'2468',   'J'    },
+   {'256',    'INT'  },
+   {'28',     'V'    },
+   {'3',      'T'    },
+   {'34',     'D'    },
+   {'3456',   'G'    },
+   {'357',    'N'    },
+   {'4',      'K'    },
+   {'45',     'EX'   },
+   {'5',      'P'    },
+   {'56',     'B'    },
+   {'57',     'M'    },
+   {'6',      'W'    },
+   {'7',      'H'    },
+   {'78',     'L'    },
+   {'8',      'R'    },
+   {'9',      'a'    },    --< intentionally lower case
+   {'a',      'o'    },    --< intentionally lower case
+   {'b',      '*'    },
+   {'c',      'e'    },    --< intentionally lower case
+   {'d',      'u'    },    --< intentionally lower case
+   {'e',      'F'    },
+   {'efgh',   'RCH'  },
+   {'efghkm', 'NCH'  },
+   {'eg',     'CH'   },
+   {'f',      'R'    },
+   {'fh',     'SH'   },
+   {'fhp',    'SHUS' },
+   {'g',      'P'    },
+   {'gh',     'N'    },
+   {'ghkm',   'J'    },
+   {'gk',     'M'    },
+   {'gkn',    'MENT' },
+   {'h',      'B'    },
+   {'hm',     'K'    },
+   {'k',      'L'    },
+   {'m',      'G'    },
+   {'mn',     'TH'   },
+   {'n',      'T'    },
+   {'p',      'S'    },
+   {'q',      'D'    },
+   {'r',      'Z'    },
 }
 
 local function decode(str)
