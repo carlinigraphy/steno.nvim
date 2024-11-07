@@ -3,12 +3,6 @@ local expr = require('expr')
 local STENO_WIDTH = 23
 local MAX_ITERATIONS = 100
 
----@class (exact) datum
----@field buf string
----@field input string
-
----@alias rule [string, string]
----@alias rules rule[]
 
 ---@param rules rules
 ---@param head datum
@@ -46,9 +40,6 @@ local function query()
    local stack = {
       { buf='', input=expr.encode(lines[1]) }
    }
-
-   -- Can't process an empty line.
-   if encoded == '' then return end
 
    ---@type datum
    local head = {
