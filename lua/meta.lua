@@ -1,8 +1,14 @@
 ---@meta
 
----@class (exact) datum
----@field buf string
----@field input string
+---@alias stack datum[]
 
----@alias rule [string, string]
----@alias rules rule[]
+---@class (exact) datum
+---@field input string
+---@field buffer ( [string, string] )[]
+
+---@class rule
+---@field output string
+---@field negates? string[]  Patterns negated by this rule
+
+---@class (exact) code
+---@field value string

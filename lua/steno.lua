@@ -1,70 +1,22 @@
+--[[
+
+TODO: Just generally clean up the code.
+
+      Using a mix of a functional & iterative approach. Passing in some things
+      as accumulators, and others created and mutated within the function.
+
+      Lack of clarity surrounding data. Some things have properties, others,
+      indices.
+
+TODO: Boolean "astrisk" flag, as the `*' is often separated from the "connected"
+      stroke. E.g., L*IS.
+
+--]]
+
 local expr = require('expr')
 
+-- (const)
 local STENO_WIDTH = 23
-local MAX_ITERATIONS = 100
-
-
----@param rules rules
----@param head datum
----@param stack stack
-local function inner(rules, head, stack)
-   local rv = {}
-
-   for _, rule in ipairs(rules) do
-      if head.input
-            :sub(1, #rule[1])
-            :match(rule[1])
-      then
-         table.insert(rv, {
-            buf = head.buf .. rule[2],
-            input = head.input:sub(1 + #rule[1])
-         })
-       end
-   end
-
-   for _,v in ipairs(rv) do
-      table.insert(stack, v)
-   end
-
-   return stack
-end
-
-
----@returns string[]
-local function query()
-   local line_nr = vim.fn.line('.') - 1 --< fix api-indexing offset
-   local lines   = vim.api.nvim_buf_get_lines(0, line_nr, line_nr+1, true)
-
-   ---@alias stack datum[]
-   ---@type stack
-   local stack = {
-      { buf='', input=expr.encode(lines[1]) }
-   }
-
-   ---@type datum
-   local head = {
-      buf = '',
-      input = '',
-   }
-
-   ---@type string[]
-   local candidates = {}
-
-   local overflow = 1
-   while #stack > 0 do
-      overflow = overflow + 1
-      assert(overflow < MAX_ITERATIONS, '$MAX_ITERATIONS exceeded')
-
-      head = table.remove(stack)
-      if head.input == '' then
-         table.insert(candidates, head.buf)
-      else
-         stack = inner(expr.rules, head, stack)
-      end
-   end
-
-   return candidates
-end
 
 
 local function display(lines)
@@ -97,13 +49,125 @@ local function display(lines)
 end
 
 
+---@return string
+--
+-- Makes testing easier. Can pass in literal strings instead of `get_input()`
+-- output.
+local function get_input()
+   local line_nr = vim.fn.line('.') - 1 --< fix api-indexing offset
+   local lines   = vim.api.nvim_buf_get_lines(0, line_nr, line_nr+1, true)
+   return lines[1]
+end
+
+
+---@param tbl table
+---@param value any
+--
+-- Just a `table.insert` with extra steps. Can't use a reference to an
+-- underlying table. Need to create a new one.
+local function copy_and_push(tbl, value)
+   local rv = {}
+   for _,v in ipairs(tbl) do
+      table.insert(rv, v)
+   end
+   table.insert(rv, value)
+   return rv
+end
+
+
+---@param rules rule[]
+---@param head datum
+---@param negations string[]
+---@param stack stack
+local function parse(rules, head, negations, stack)
+   ---@type datum[]
+   local rv = {}
+
+   for pattern, rule in pairs(rules) do
+      if head.input
+         :sub(1, #pattern)
+         :match(pattern)
+      then
+         for _,n in ipairs(rule.negates or {}) do
+            table.insert(negations, n)
+         end
+
+         table.insert(rv, {
+            input = head.input:sub(1 + #pattern),
+            buffer = copy_and_push(head.buffer, { pattern, rule.output }),
+         })
+       end
+   end
+
+   for _,v in ipairs(rv) do
+      table.insert(stack, v)
+   end
+
+   return negations, stack
+end
+
+
+local function apply_negations(head, negations, candidates)
+   local value = ''
+   local ignore = {}
+
+   for _,data in ipairs(head.buffer) do
+      value = value .. data[2]
+      ignore[data[1]] = true
+   end
+
+   for _,negation in ipairs(negations) do
+      if ignore[negation] then
+         print('negating: ' .. value)
+         return negations, candidates
+      end
+   end
+
+   table.insert(candidates, value)
+   return negations, candidates
+end
+
+
+---@param negations  string[]
+---@param candidates string[]
+---@param stack      datum[]
+local function build_output(negations, candidates, stack)
+   if #stack == 0 then
+      return candidates
+   end
+
+   local head = table.remove(stack)
+   if head.input == '' then
+      local new_n, new_c = apply_negations(head, negations, candidates)
+      return build_output(new_n, new_c, stack)
+   else
+      local new_n, new_s = parse(expr.rules, head, negations, stack)
+      return build_output(new_n, candidates, new_s)
+   end
+end
+
+
+local function query()
+   display(build_output({}, {}, {
+      {
+         input = expr.encode(get_input()).value,
+         -- TODO: created table with only `.value` key to make easier to handle
+         -- astrisk as a boolean property.
+
+         buffer = {},
+         negations = {},
+      }
+   }))
+end
+
+
 return {
    setup = function()
       vim.api.nvim_create_autocmd('FileType', {
         pattern = { 'steno_raw' },
         callback = function(_)
            vim.keymap.set('n', 'K', function()
-              display(query())
+              query()
            end, { desc = "Provide raw steno suggestions" })
         end
      })
