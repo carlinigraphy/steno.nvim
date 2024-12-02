@@ -10,4 +10,7 @@ vim.api.nvim_set_hl(0, 'NonText', { fg='#202020' })
 
 vim.keymap.set('n', 'K', function()
    require('steno').query()
-end, { desc = "Provide raw steno suggestions" })
+end, {
+   buffer = true,
+   desc = "Provide raw steno suggestions"
+})
