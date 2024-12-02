@@ -28,6 +28,7 @@ local RULES = {
    ['468'   ] = { output = 'Y',
       negates = { '4', '6', '8' }
    },
+   ['47'    ] = { output = 'CH'   },
    ['5'     ] = { output = 'P'    },
    ['56'    ] = { output = 'B',
       negates = { '5', '6' }
@@ -50,11 +51,14 @@ local RULES = {
    ['fh'    ] = { output = 'SH'   },
    ['fhp'   ] = { output = 'SHUS' },
    ['g'     ] = { output = 'P'    },
-   ['gh'    ] = { output = 'N'    },
+   ['gh'    ] = { output = 'N',
+      negates = { 'g', 'h' }
+   },
    ['ghkm'  ] = { output = 'J'    },
    ['gk'    ] = { output = 'M'    },
    ['gkn'   ] = { output = 'MENT' },
    ['h'     ] = { output = 'B'    },
+   ['hmp'   ] = { output = 'X'    },
    ['hm'    ] = { output = 'K'    },
    ['k'     ] = { output = 'L'    },
    ['m'     ] = { output = 'G'    },

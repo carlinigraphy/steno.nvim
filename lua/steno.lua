@@ -1,18 +1,3 @@
---[[
-
-TODO: Just generally clean up the code.
-
-      Using a mix of a functional & iterative approach. Passing in some things
-      as accumulators, and others created and mutated within the function.
-
-      Lack of clarity surrounding data. Some things have properties, others,
-      indices.
-
-TODO: Boolean "astrisk" flag, as the `*' is often separated from the "connected"
-      stroke. E.g., L*IS.
-
---]]
-
 local expr = require('expr')
 
 -- (const)
@@ -162,14 +147,5 @@ end
 
 
 return {
-   setup = function()
-      vim.api.nvim_create_autocmd('FileType', {
-        pattern = { 'steno_raw' },
-        callback = function(_)
-           vim.keymap.set('n', 'K', function()
-              query()
-           end, { desc = "Provide raw steno suggestions" })
-        end
-     })
-   end
+   query = query
 }
