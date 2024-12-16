@@ -103,7 +103,6 @@ local function apply_negations(head, negations, candidates)
 
    for _,negation in ipairs(negations) do
       if ignore[negation] then
-         print('negating: ' .. value)
          return negations, candidates
       end
    end
